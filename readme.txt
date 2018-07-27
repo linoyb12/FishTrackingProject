@@ -1,4 +1,4 @@
-fish 3D tracking:
+Fish 3D tracking:
 
 (update only once when switching setting)
 - Calibrate each camera separately using a chessboard. (calibration is done using the file calibration.py)
