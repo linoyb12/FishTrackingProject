@@ -72,7 +72,7 @@ def calculateRefractedRays(first_refraction, second_refraction, ray, plane_norma
 
 #cam1_ray - first camera direction vector of the refracted ray
 #cam2_ray - second camera direction vector of the refracted ray
-#cam1_refractio_point (point of intersection with plane) - first camera point of refraction
+#cam1_ref_point (point of intersection with plane) - first camera point of refraction
 #cam2_ref_point - second camera point of refraction
 #find ray intersection
 def triangulateRays(cam1_ray, cam2_ray, cam1_ref_point, cam2_ref_point):
