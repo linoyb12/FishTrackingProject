@@ -1,16 +1,12 @@
 import numpy as np
 import cv2
 
-#start - change when moving to a different tank setting
-tank_Height = 10
-tank_width = 28
-tank_length = 48
+side_cam_tank_points_path = "side_cam_tank_points.npy"
+up_cam_tank_points_path = "up_cam_tank_points.npy"
+tank_config_path = "tank_config.npy"
 
-#pixel coordinates matching world coordinates
-cam_up_coordinates = np.array([[1118, 545], [303, 558], [1015, 111], [294, 135]], dtype=np.float32).reshape((4,1,2))
-cam_side_coordinates = np.array([[242, 472], [887, 469], [119, 526], [984, 523]], dtype=np.float32).reshape((4,1,2))
-#end - change when moving to a different tank setting
-world_coordinates = np.array([[0, 0, 0], [tank_length, 0, 0], [0, tank_width, 0], [tank_length, tank_width, 0]], dtype=np.float32).reshape((4,1,3))
+global cam_side_coordinates, cam_up_coordinates, world_coordinates, plane_up_cam_points, plane_side_cam_points
+global tank_height, tank_width, tank_length
 
 matrix_side_cam = np.load('side_cam/cam_mat.npy')
 dist_side_cam = np.load('side_cam/dist.npy').reshape((5, 1))
@@ -20,11 +16,24 @@ dist_up_cam = np.load('up_cam/dist.npy').reshape((5, 1))
 plane_normal_up_cam = np.array([0,0,1])
 plane_normal_side_cam = np.array([0,1,0])
 
-plane_up_cam_points = np.array([[0,0,0],[tank_length,0,0],[0,tank_width,0],[tank_length,tank_width,0]])
-plane_side_cam_points = np.array([[0,tank_width,0],[tank_length,tank_width,0],[0,tank_width,tank_Height],[tank_length,tank_width,tank_Height]])
-
 airRefraction = 1.0
 waterRefraction = 1.33
+
+def init_data():
+    global cam_side_coordinates, cam_up_coordinates, world_coordinates, plane_up_cam_points, plane_side_cam_points
+    global tank_width, tank_length, tank_height
+
+    cam_side_coordinates = np.load(side_cam_tank_points_path).reshape((4,1,2))
+    cam_up_coordinates = np.load(up_cam_tank_points_path).reshape((4,1,2))
+
+    tank_config = np.load(tank_config_path)
+    tank_length = tank_config[0]
+    tank_width = tank_config[1]
+    tank_height = tank_config[2]
+
+    world_coordinates = np.array([[0, 0, 0], [tank_length, 0, 0], [0, tank_width, 0], [tank_length, tank_width, 0]],dtype=np.float32).reshape((4, 1, 3))
+    plane_up_cam_points = np.array([[0,0,0],[tank_length,0,0],[0,tank_width,0],[tank_length,tank_width,0]])
+    plane_side_cam_points = np.array([[0,tank_width,0],[tank_length,tank_width,0],[0,tank_width,tank_height],[tank_length,tank_width,tank_height]])
 
 def calculateParamsAndCamPosition(cam_matrix, cam_dist, cam_coordinates , world_coordinates):
     ret, rvec, tvec = cv2.solvePnP(world_coordinates , cam_coordinates , cam_matrix, cam_dist, flags=cv2.SOLVEPNP_P3P)
@@ -95,6 +104,8 @@ def triangulateRays(cam1_ray, cam2_ray, cam1_ref_point, cam2_ref_point):
     return p
 
 def calculate3DCoordinates(side_cam_point, up_cam_point):
+    init_data()
+
     rotation_matrix1, cam_position1 = calculateParamsAndCamPosition(matrix_side_cam, dist_side_cam, cam_side_coordinates, world_coordinates)
     ray_cam1 = calcRay(matrix_side_cam, dist_side_cam, side_cam_point, rotation_matrix1)
     plane_ray_intersection1 = planeRayIntersection(ray_cam1, plane_side_cam_points[0], cam_position1.flatten(), plane_normal_side_cam)
@@ -107,9 +118,3 @@ def calculate3DCoordinates(side_cam_point, up_cam_point):
 
     intersection = triangulateRays(refracted_ray_cam1, refracted_ray_cam2, plane_ray_intersection1, plane_ray_intersection2)
     return intersection
-
-#float coordinates  in pixels for each camera
-sideCoordinates  = np.array( [642. , 592.] )
-upCoordinates = np.array([581. , 345.])
-point = calculate3DCoordinates(sideCoordinates, upCoordinates)
-print point
